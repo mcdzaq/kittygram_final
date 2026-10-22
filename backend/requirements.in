@@ -1,0 +1,9 @@
+# Django 4.2 is the compatibility branch for the assignment's PostgreSQL 13.
+# Upgrade Django and PostgreSQL together before an internet deployment.
+Django==4.2.30
+djangorestframework==3.16.1
+djoser==2.3.5
+gunicorn==26.2.0
+Pillow==13.0.0
+psycopg2-binary==2.9.13
+webcolors==25.10.0

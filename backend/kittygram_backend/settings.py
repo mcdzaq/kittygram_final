@@ -1,14 +1,27 @@
-# flake8: noqa
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-cg6*%6d51ef8f#4!r3*$vmxm4)abgjw8mo!4y-q*uq1!4$-89$'
 
-DEBUG = True
+def env_list(name, default=''):
+    return [value.strip() for value in os.getenv(name, default).split(',')
+            if value.strip()]
 
-ALLOWED_HOSTS = []
+
+TESTING = os.getenv('DJANGO_TESTING', '0') == '1'
+SECRET_KEY = os.getenv('SECRET_KEY', '')
+if not SECRET_KEY:
+    if TESTING:
+        SECRET_KEY = 'kittygram-test-key-not-for-deployment'
+    else:
+        raise ImproperlyConfigured('Set SECRET_KEY before starting Kittygram.')
+
+DEBUG = os.getenv('DEBUG', 'false').lower() in {'1', 'true', 'yes'}
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,[::1]')
+CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -56,14 +69,27 @@ WSGI_APPLICATION = 'kittygram_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'kittygram'),
+        'USER': os.getenv('POSTGRES_USER', 'kittygram_user'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'db'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 
+# SQLite is an explicit option for fast API tests; container runs use PostgreSQL.
+if os.getenv('DB_ENGINE') == 'sqlite':
+    if not TESTING:
+        raise ImproperlyConfigured('SQLite is only available with DJANGO_TESTING=1.')
+    DATABASES = {'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+    }}
+
 
 # Password validation
-# https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
+# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -92,15 +118,18 @@ USE_TZ = True
 
 
 STATIC_URL = '/static/'
+STATIC_ROOT = Path(os.getenv('STATIC_ROOT', '/backend_static/static'))
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = Path(os.getenv('MEDIA_ROOT', str(BASE_DIR / 'media')))
+# Photos arrive as base64 JSON. Keep this aligned with the gateway body limit.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated', 
+        'rest_framework.permissions.IsAuthenticated',
     ],
 
     'DEFAULT_AUTHENTICATION_CLASSES': [

@@ -1,0 +1,12 @@
+.env
+.env.*
+.venv
+venv
+__pycache__
+*.py[cod]
+*.sqlite3
+.pytest_cache
+.ruff_cache
+media
+collected_static
+.DS_Store
