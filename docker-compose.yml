@@ -1,27 +1,60 @@
-version: '3'
+services:
+  db:
+    image: postgres:13
+    env_file: .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  backend:
+    image: mcdzaq/kittygram_backend:${IMAGE_TAG:-latest}
+    build: ./backend
+    pull_policy: build
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - static:/backend_static
+      - media:/app/media
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/admin/login/', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  frontend:
+    image: mcdzaq/kittygram_frontend:${IMAGE_TAG:-latest}
+    build: ./frontend
+    pull_policy: build
+    volumes:
+      - static:/static
+    restart: "no"
+
+  gateway:
+    image: mcdzaq/kittygram_gateway:${IMAGE_TAG:-latest}
+    build: ./nginx
+    pull_policy: build
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${KITTYGRAM_PORT:-9000}:80"
+    volumes:
+      - static:/static:ro
+      - media:/media:ro
+    restart: unless-stopped
 
 volumes:
   pg_data:
   static:
-
-services:
-  db:
-    image: postgres:13
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-  backend:
-    build: ./backend/
-    env_file: .env
-  frontend:
-    env_file: .env
-    build: ./frontend/
-    command: cp -r /app/build/. /static/
-    volumes:
-      - static:/static
-  gateway:
-    build: ./nginx/
-    env_file: .env
-    ports:
-      - 9000:80
-    volumes:
-      - static:/static
+  media:

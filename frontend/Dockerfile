@@ -1,13 +1,13 @@
-FROM node:18
+FROM node:22-bookworm-slim AS build
+
 WORKDIR /app
-
-COPY package.json package.json
-COPY package-lock.json package-lock.json
-
-RUN npm ci
-
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 COPY . .
-RUN npm run build
-RUN npm install --global http-server
+RUN CI=true npm run build
 
-CMD ["npx", "-y", "http-server", "-p", "8000", "/app/build"]
+# This one-shot container publishes the built files into the shared volume.
+FROM busybox:1.37.0
+WORKDIR /app
+COPY --from=build /app/build ./build
+CMD ["sh", "-c", "cp -r /app/build/. /static/"]
