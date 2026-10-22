@@ -150,3 +150,7 @@ media/
 
 # Others
 node_modules
+
+# Local generated credentials and smoke state
+.local/
+.ruff_cache/

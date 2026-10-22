@@ -1,51 +1,16 @@
-### Как запустить проект:
+# Backend Kittygram
 
-Клонировать репозиторий и перейти в него в командной строке:
+Django REST Framework API с TokenAuthentication через Djoser.
+Инструкция по контейнерам, переменным окружения и CI находится в
+[корневом README](../README.md).
 
-```
-git clone https://github.com/yandex-praktikum/kittygram_backend.git
-```
+Для быстрых локальных тестов на Python 3.12:
 
-```
-cd kittygram_backend
-```
-
-Cоздать и активировать виртуальное окружение:
-
-```
-python3 -m venv env
+```sh
+pip install -r requirements-dev.txt
+DJANGO_TESTING=1 DB_ENGINE=sqlite python manage.py test cats
 ```
 
-* Если у вас Linux/macOS
-
-    ```
-    source env/bin/activate
-    ```
-
-* Если у вас windows
-
-    ```
-    source env/scripts/activate
-    ```
-
-```
-python3 -m pip install --upgrade pip
-```
-
-Установить зависимости из файла requirements.txt:
-
-```
-pip install -r requirements.txt
-```
-
-Выполнить миграции:
-
-```
-python3 manage.py migrate
-```
-
-Запустить проект:
-
-```
-python3 manage.py runserver
-```
+Обычный запуск требует `SECRET_KEY`, PostgreSQL и его параметров из `.env.example`.
+Статика собирается в `/backend_static/static`, фотографии сохраняются в `/app/media`.
+Runtime-образ запускает миграции, collectstatic и Gunicorn командой `CMD` из Dockerfile.
